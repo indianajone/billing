@@ -1,0 +1,24 @@
+{
+    "name": "mustache/billing",
+    "description": "Billing and Payment",
+    "require": {
+        "illuminate/support": "~5.0",
+        "paypal/rest-api-sdk-php": "~1.2"
+    },
+    "require-dev": {
+        "phpspec/phpspec": "~2.1",
+        "symfony/var-dumper": "~2.6"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "indianajone",
+            "email": "mmer555@hotmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Mustache\\": "src/Mustache"
+        }
+    }
+}
