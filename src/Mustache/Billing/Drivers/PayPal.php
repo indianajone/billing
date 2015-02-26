@@ -49,8 +49,6 @@ class PayPal implements BillingContract {
 
         $approvalUrl = $payment->getApprovalLink();
 
-        dd($payment);
-
         return $payment;
     }
 
