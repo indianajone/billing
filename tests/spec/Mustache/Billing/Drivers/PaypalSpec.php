@@ -14,8 +14,8 @@ class PaypalSpec extends ObjectBehavior
 {
     function let(PaypalToken $token, ApiContext $apicontext)
     {
-        $clientId = 'ARpcRhBPHtGyRnQu4n6lyvgwRTYDfgHXsIK5YsMw3OA-8FQ-TjUicIMC8wWO';
-        $secret = 'EMEJ0RCgwH_JgX6bdB9t33AqZLzmf-INX4B0036X5p-zA7Rw7JNna-KgxFrd';
+        $clientId = 'AfWPUBfESQO_vYJQ6zmhhOcC8s5Q-vet6ajVgsai96V5nnnd8z0WFjcTYWcQmhVNnsgtLVWWKqjpZf0B';
+        $secret = 'EFtOJeHVDEQnoAN5-mtD25goNzT1wd5wi1MY_jimmkasXmi7e2N4Jablo-LaBjHS3sAa4g40AflJkHZ3';
 
         $this->beConstructedWith($clientId, $secret);
     }
@@ -32,11 +32,11 @@ class PaypalSpec extends ObjectBehavior
             'total' => 2568.00,
             'intent' => 'sale',
             'redirects' => [
-                'success' => 'https://devtools-paypal.com/guide/pay_paypal/php?success=true',
-                'fail' => 'https://devtools-paypal.com/guide/pay_paypal/php?cancel=true'
+                'success' => 'http://avitez.app?success=true',
+                'fail' => 'http://avitez.app?cancel=true'
             ],
             'payer' => [
-                'email' => 'john@example.com',
+                'email' => 'mmer555-buyer@hotmail.com',
                 'firstname' => 'John',
                 'lastname' => 'Doe',
                 'phone' => '0819101234',

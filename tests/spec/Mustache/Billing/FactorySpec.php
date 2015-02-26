@@ -9,7 +9,10 @@ class FactorySpec extends ObjectBehavior
 {
     function let()
     {
-        $config = [];
+        $config = [
+            'client_id' => 'ARpcRhBPHtGyRnQu4n6lyvgwRTYDfgHXsIK5YsMw3OA-8FQ-TjUicIMC8wWO',
+            'secret' => 'EMEJ0RCgwH_JgX6bdB9t33AqZLzmf-INX4B0036X5p-zA7Rw7JNna-KgxFrd'
+        ];
 
         $this->beConstructedWith($config);
     }

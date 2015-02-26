@@ -20,9 +20,9 @@ class PayPal implements BillingContract {
 
     public function __construct($clientId, $secret)
     {
-        $credential = $this->getApiCredential($clientId, $secret);
-
         $mode = $this->getEnvironment();
+        
+        $credential = $this->getApiCredential($clientId, $secret);
 
         $this->apicontext = $this->getApiContext($credential, compact('mode'));
     }
@@ -37,8 +37,21 @@ class PayPal implements BillingContract {
 
         $redirector = $this->redirector($order['redirects']['success'], $order['redirects']['fail']);
 
-        $this->payments($payer, $transaction, $redirector, $order['intent'])
-             ->create($this->apicontext);
+        try {
+            
+            $payment = $this->payments($payer, $transaction, $redirector, $order['intent'])
+                            ->create($this->apicontext);
+        }
+        catch(\Exception $e)
+        {
+            dd($e->getData());
+        }
+
+        $approvalUrl = $payment->getApprovalLink();
+
+        dd($payment);
+
+        return $payment;
     }
 
     public function getEnvironment()
@@ -75,14 +88,23 @@ class PayPal implements BillingContract {
 
         $apicontext = new ApiContext($credential, 'Request-'.time());
 
-        $apicontext->setConfig($config);
+        $apicontext->setConfig([
+            'mode' => $this->getEnvironment(),
+            'log.LogEnabled' => true,
+            'log.FileName' => __DIR__.'/../../../PayPal.log',
+            'log.LogLevel' => 'DEBUG'
+        ]);
 
         return $apicontext;
     }
 
     protected function getApiCredential($clientId, $secret)
     {
-        return new OAuthTokenCredential($clientId, $secret);
+        $credential =  new OAuthTokenCredential($clientId, $secret);
+
+        $credential->getAccessToken(compact('mode'));
+
+        return $credential;
     }
 
     protected function address($name, $address, $city, $code, $postcode)
@@ -120,10 +142,8 @@ class PayPal implements BillingContract {
     protected function payerInfo($email, $firstname, $lastname, $phone, ShippingAddress $address)
     {
         return new PayerInfo([
-            'email' => $email,
             'first_name' => $firstname,
             'last_name' => $lastname,
-            'phone' => $phone,
             'shipping_address' => $address
         ]);
     }
