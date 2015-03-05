@@ -7,12 +7,11 @@ use Prophecy\Argument;
 
 use PayPal\Rest\ApiContext;
 use PayPal\Api\Payment;
-use PayPal\Auth\OAuthTokenCredential as PaypalToken;
-
+use PayPal\Api\PaymentExecution;
 
 class PaypalSpec extends ObjectBehavior
 {
-    function let(PaypalToken $token, ApiContext $apicontext)
+    function let()
     {
         $clientId = 'AfWPUBfESQO_vYJQ6zmhhOcC8s5Q-vet6ajVgsai96V5nnnd8z0WFjcTYWcQmhVNnsgtLVWWKqjpZf0B';
         $secret = 'EFtOJeHVDEQnoAN5-mtD25goNzT1wd5wi1MY_jimmkasXmi7e2N4Jablo-LaBjHS3sAa4g40AflJkHZ3';
@@ -25,15 +24,15 @@ class PaypalSpec extends ObjectBehavior
         $this->shouldHaveType('Mustache\Billing\Drivers\Paypal');
     }
 
-    function it_request_payment_for_business(ApiContext $apicontext, Payment $payment)
+    function it_request_payment_for_business()
     {
         $order = [
             'description' => '500ml (24 per pack) One-time delivery',
             'total' => 2568.00,
             'intent' => 'sale',
             'redirects' => [
-                'success' => 'http://avitez.app?success=true',
-                'fail' => 'http://avitez.app?cancel=true'
+                'return' => "http://avitez.app?success=true",
+                'cancel' => "http://avitez.app?cancel=true"
             ],
             'payer' => [
                 'email' => 'mmer555-buyer@hotmail.com',
@@ -49,8 +48,19 @@ class PaypalSpec extends ObjectBehavior
             ]
         ];
 
-        $payment->create($apicontext)->shouldBeCalled();
+        $this->payment($order)->shouldReturnAnInstanceOf('PayPal\Api\Payment');
+    }
 
-        $this->payment($order);
+    function it_execute_payment_for_business(ApiContext $apicontext, Payment $payments, PaymentExecution $executor)
+    {
+        $payerId = 'USJ4CUH867BV6';
+
+        // $payments->get('PAY-2JJ78327JX616254RKTYDONA')->shouldBeCalled();
+
+        // $executor->setPayerId($payerId)->willReturn($executor);
+
+        // $payments->execute($executor)->shouldBeCalled();
+
+        $this->pay($payments, $payerId);
     }
 }

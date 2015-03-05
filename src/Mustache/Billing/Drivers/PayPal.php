@@ -1,6 +1,7 @@
 <?php namespace Mustache\Billing\Drivers;
 
 use PayPal\Api\Amount;
+use PayPal\Api\PaymentExecution;
 use PayPal\Api\Details;
 use PayPal\Api\Payer;
 use PayPal\Api\PayerInfo;
@@ -16,15 +17,17 @@ class PayPal implements BillingContract {
 
     protected $apicontext;
 
+    protected $credential;
+
     protected $environment;
 
     public function __construct($clientId, $secret)
     {
         $mode = $this->getEnvironment();
         
-        $credential = $this->getApiCredential($clientId, $secret);
+        $this->credential = $this->getApiCredential($clientId, $secret);
 
-        $this->apicontext = $this->getApiContext($credential, compact('mode'));
+        $this->apicontext = $this->getApiContext(compact('mode'));
     }
 
     public function payment($order)
@@ -35,21 +38,17 @@ class PayPal implements BillingContract {
 
         $transaction = $this->transaction($amount, $order['description']);
 
-        $redirector = $this->redirector($order['redirects']['success'], $order['redirects']['fail']);
+        $redirector = $this->redirector($order['redirects']['return'], $order['redirects']['cancel']);
+    
+        return $this->payments($payer, $transaction, $redirector, $order['intent'])
+                    ->create($this->apicontext);
+    }
 
-        try {
-            
-            $payment = $this->payments($payer, $transaction, $redirector, $order['intent'])
-                            ->create($this->apicontext);
-        }
-        catch(\Exception $e)
-        {
-            dd($e->getData());
-        }
+    public function pay(Payment $payments, $payerId)
+    {   
+        $execution = (new PaymentExecution)->setPayerId($payerId);
 
-        $approvalUrl = $payment->getApprovalLink();
-
-        return $payment;
+        return $payments->execute($execution);
     }
 
     public function getEnvironment()
@@ -77,14 +76,14 @@ class PayPal implements BillingContract {
         return $this->payer($payerInfo);
     }
 
-    protected function getApiContext($credential, $config=[])
+    protected function getApiContext($config=[])
     {
         if($this->apicontext)
         {
             return $this->apicontext;
         }
 
-        $apicontext = new ApiContext($credential, 'Request-'.time());
+        $apicontext = new ApiContext($this->credential, 'Request-'.time());
 
         $apicontext->setConfig([
             'mode' => $this->getEnvironment(),
@@ -99,6 +98,8 @@ class PayPal implements BillingContract {
     protected function getApiCredential($clientId, $secret)
     {
         $credential =  new OAuthTokenCredential($clientId, $secret);
+
+        $mode = $this->getEnvironment();
 
         $credential->getAccessToken(compact('mode'));
 
@@ -156,12 +157,18 @@ class PayPal implements BillingContract {
         ]);
     }
 
-    protected function redirector($success, $fail)
+    protected function redirector($returnUrl, $cancelUrl=null)
     {
-        return new RedirectUrls([
-            'return_url' => $success,
-            'cancel_url' => $fail
+        $redirectUrl = new RedirectUrls([
+            'return_url' => $returnUrl
         ]);
+
+        if($cancelUrl)
+        {
+            $redirectUrl->setCancelUrl($cancelUrl);
+        }
+
+        return $redirectUrl;
     }
 
     protected function transaction($amount, $description=null)

@@ -32,7 +32,7 @@ class Factory
      */
     public function getDefaultDriver()
     {
-        return $this->getConfig('driver') ?: static::DEFAULT_DRIVER;
+        return $this->getConfig('driver') ?: self::DEFAULT_DRIVER;
     }
 
     /**
