@@ -61,6 +61,6 @@ class PayPalSpec extends ObjectBehavior
             ]
         ];
 
-        $this->make($order)->shouldReturnAnInstanceOf('PayPal\Api\Payment');
+        $this->make($order)->shouldBeString();
     }
 }

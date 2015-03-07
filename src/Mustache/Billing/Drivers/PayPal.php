@@ -59,7 +59,12 @@ class PayPal implements BillingContract {
 
         $result = $this->execution($payment, $data['PayerID']);
 
-        return $result;
+        return $this->isSuccess($result->getState());
+    }
+
+    protected function isSuccess($state)
+    {
+        return $state == 'approved';
     }
 
     protected function apiContext($clientId, $secret, $config)
