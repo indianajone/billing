@@ -39,6 +39,19 @@ class PayPalSpec extends ObjectBehavior
             'method' => 'paypal',
             'return_url' => 'http://avitez.com',
             'total' => 200,
+            'payer' => [
+                'firstname' => 'John',
+                'lastname' => 'Doe',
+                'email' => 'john@example.com',
+                'phone' => '0812345678',
+                'address' => [
+                    'line1' => '123/1 Foo st',
+                    'city' => 'City',
+                    'country' => 'US',
+                    'state' => 'STATE',
+                    'postcode' => '12345'
+                ]
+            ],
             'items' => [
                 [
                     'name' => 'coffee beans',

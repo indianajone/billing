@@ -24,7 +24,7 @@ class FactorySpec extends ObjectBehavior
             ]
         ];
 
-        $this->beConstructedWith([]);
+        $this->beConstructedWith($config);
     }
 
     function it_is_initializable()

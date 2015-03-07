@@ -26,7 +26,9 @@ class PayPal implements BillingContract {
 
     public function make($data)
     {
-        $payer = $this->payer(array_get($data, 'method', 'paypal'));
+        $payerInfo = $this->payerInfo(array_get($data, 'payer'));
+
+        $payer = $this->payer(array_get($data, 'method', 'paypal'), $payerInfo);
 
         $items = $this->items(array_get($data, 'items', []));
 
@@ -56,15 +58,6 @@ class PayPal implements BillingContract {
         return $this->execute($payment, $data['PayerID']);
     }
 
-    protected function execute(Payment $payments, $payerId)
-    {   
-        $execution = new PaymentExecution;
-
-        $execution->setPayerId($payerId);
-
-        return $payments->execute($execution, $this->apiContext);
-    }
-
     protected function apiContext($clientId, $secret, $config)
     {
         if($this->apiContext)
@@ -88,6 +81,15 @@ class PayPal implements BillingContract {
         return $apiContext;
     }
 
+    protected function execute(Payment $payments, $payerId)
+    {   
+        $execution = new PaymentExecution;
+
+        $execution->setPayerId($payerId);
+
+        return $payments->execute($execution, $this->apiContext);
+    }
+
     protected function getApiCredential($clientId, $secret, $config)
     {
         $credential =  new OAuthTokenCredential($clientId, $secret);
@@ -97,12 +99,61 @@ class PayPal implements BillingContract {
         return $credential;
     }
 
-    protected function payer($method, $info=null)
+    protected function getFullname(PayerInfo $payer)
+    {
+        $fullname = $payer->getFirstName();
+
+        if($lastname = $payer->getLastName())
+        {
+            $fullname .= " $lastname"; 
+        }
+
+        return $fullname;
+    }
+
+    protected function payer($method, PayerInfo $info=null)
     {
         $payer = new Payer;
 
         return $payer->setPaymentMethod($method)
                      ->setPayerInfo($info);
+    }
+
+    protected function payerInfo($payer=null)
+    {
+        if(empty($payer))
+        {
+            return null;
+        }
+
+        $payerInfo = new PayerInfo;
+
+        $payerInfo->setFirstName(array_get($payer, 'firstname'))
+                  ->setLastName(array_get($payer, 'lastname'));
+
+        if($address = array_get($payer, 'address'))
+        {
+            $shippingAddress = $this->address($this->getFullname($payerInfo), $payerInfo->getPhone(), $address);
+
+            $payerInfo->setShippingAddress($shippingAddress);
+        }
+
+        return $payerInfo;
+    }
+
+    protected function address($name, $phone, $address)
+    {
+        $shippingAddress = new ShippingAddress;
+
+        return $shippingAddress->setRecipientName($name)
+                               ->setLine1(array_get($address, 'line1'))
+                               ->setLine2(array_get($address, 'line2'))
+                               ->setCity(array_get($address, 'city'))
+                               ->setState(array_get($address, 'state'))
+                               ->setCountryCode(array_get($address, 'country', 'TH'))
+                               ->setPostalCode(array_get($address, 'postcode'))
+                               ->setPhone($phone);
+
     }
 
     protected function amount($total, $currency)
