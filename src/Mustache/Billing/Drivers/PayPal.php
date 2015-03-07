@@ -43,7 +43,9 @@ class PayPal implements BillingContract {
                         ->setRedirectUrls($redirectUrls)
                         ->setTransactions([$transaction]);
 
-        return $payment->create($this->apiContext);
+        $payment->create($this->apiContext);
+
+        return $payment->getApprovalLink();
     }
 
     public function get($id)
@@ -51,11 +53,13 @@ class PayPal implements BillingContract {
         return $this->payment()->get($id, $this->apiContext);
     }
 
-    public function pay($data)
+    public function execute($data)
     {
         $payment = $this->get($data['paymentId']);
 
-        return $this->execute($payment, $data['PayerID']);
+        $result = $this->execution($payment, $data['PayerID']);
+
+        return $result;
     }
 
     protected function apiContext($clientId, $secret, $config)
@@ -81,7 +85,7 @@ class PayPal implements BillingContract {
         return $apiContext;
     }
 
-    protected function execute(Payment $payments, $payerId)
+    protected function execution(Payment $payments, $payerId)
     {   
         $execution = new PaymentExecution;
 

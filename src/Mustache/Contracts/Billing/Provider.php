@@ -8,5 +8,7 @@ interface Provider {
 
     public function get($id);
 
-    public function pay($data);
+    public function execute($data);
+
+    public function getRedirectUrl();
 }
