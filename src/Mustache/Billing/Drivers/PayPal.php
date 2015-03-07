@@ -28,7 +28,7 @@ class PayPal implements BillingContract {
     {
         $payer = $this->payer(array_get($data, 'method', 'paypal'));
 
-        $items = $this->items(array_get($data, 'items'));
+        $items = $this->items(array_get($data, 'items', []));
 
         $amount = $this->amount(array_get($data, 'total'), array_get($data, 'currency'));
 
