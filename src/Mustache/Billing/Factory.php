@@ -57,11 +57,9 @@ class Factory
      * 
      * @return Repository
      */
-    public function createPaypalDriver()
+    public function createPaypalDriver(array $config)
     {
-        return new Drivers\Paypal(
-            $this->getConfig('client_id'), $this->getConfig('secret')
-        );
+        return new Drivers\Paypal($config['client_id'], $config['secret'], $config['settings']);
     }
 
     /**
@@ -79,7 +77,9 @@ class Factory
             throw new InvalidArgumentException("Driver [$driver] not supported.");
         }
 
-        return $this->$method();
+        $config = $this->getConfig($driver);
+
+        return $this->$method($config);
     }
 
     /**
@@ -90,7 +90,7 @@ class Factory
      */
     protected function getConfig($name)
     {
-        return isset($this->config[$name]) ? $this->config[$name] : null;
+        return isset($this->config[$name]) ? $this->config[$name] : [];
     }
 
     /**

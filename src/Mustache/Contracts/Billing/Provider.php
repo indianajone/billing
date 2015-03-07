@@ -2,9 +2,11 @@
 
 interface Provider {
 
-    const ENV_PRODUCTION = 'production';
-
     const ENV_SANDBOX = 'sandbox';
 
-    public function payment($order);
+    public function make($data);
+
+    public function get($id);
+
+    public function pay($data);
 }

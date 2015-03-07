@@ -10,11 +10,21 @@ class FactorySpec extends ObjectBehavior
     function let()
     {
         $config = [
-            'client_id' => 'ARpcRhBPHtGyRnQu4n6lyvgwRTYDfgHXsIK5YsMw3OA-8FQ-TjUicIMC8wWO',
-            'secret' => 'EMEJ0RCgwH_JgX6bdB9t33AqZLzmf-INX4B0036X5p-zA7Rw7JNna-KgxFrd'
+            'paypal' => [
+                'client_id' => 'ARpcRhBPHtGyRnQu4n6lyvgwRTYDfgHXsIK5YsMw3OA-8FQ-TjUicIMC8wWO',
+                'secret' => 'EMEJ0RCgwH_JgX6bdB9t33AqZLzmf-INX4B0036X5p-zA7Rw7JNna-KgxFrd',
+                'settings' => [
+                    'mode' => 'sandbox',
+                    'log' => [
+                        'enabled' => true,
+                        'path' => '../../../Paypal.log',
+                        'level' => 'DEBUG'
+                    ]
+                ]
+            ]
         ];
 
-        $this->beConstructedWith($config);
+        $this->beConstructedWith([]);
     }
 
     function it_is_initializable()

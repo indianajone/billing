@@ -3,6 +3,8 @@
 use PayPal\Api\Amount;
 use PayPal\Api\PaymentExecution;
 use PayPal\Api\Details;
+use PayPal\Api\Item;
+use PayPal\Api\ItemList;
 use PayPal\Api\Payer;
 use PayPal\Api\PayerInfo;
 use PayPal\Api\Payment;
@@ -15,164 +17,149 @@ use Mustache\Contracts\Billing\Provider as BillingContract;
 
 class PayPal implements BillingContract {
 
-    protected $apicontext;
+    protected $apiContext;
 
-    protected $credential;
-
-    protected $environment;
-
-    public function __construct($clientId, $secret)
-    {
-        $mode = $this->getEnvironment();
-        
-        $this->credential = $this->getApiCredential($clientId, $secret);
-
-        $this->apicontext = $this->getApiContext(compact('mode'));
+    public function __construct($clientId, $secret, array $config)
+    { 
+        $this->apiContext = $this->apiContext($clientId, $secret, $config);
     }
 
-    public function payment($order)
+    public function make($data)
     {
-        $payer = $this->registerPayer($order['payer']);
+        $payer = $this->payer(array_get($data, 'method', 'paypal'));
 
-        $amount = $this->amount($order['total']);
+        $items = $this->items(array_get($data, 'items'));
 
-        $transaction = $this->transaction($amount, $order['description']);
+        $amount = $this->amount(array_get($data, 'total'), array_get($data, 'currency'));
 
-        $redirector = $this->redirector($order['redirects']['return'], $order['redirects']['cancel']);
-    
-        return $this->payments($payer, $transaction, $redirector, $order['intent'])
-                    ->create($this->apicontext);
+        $transaction = $this->transaction($amount, $items, array_get($data, 'description'));
+
+        $redirectUrls = $this->redirect(array_get($data, 'return_url'), array_get($data, 'cancel_url'));
+
+        $payment = $this->payment()->setIntent('sale')
+                        ->setPayer($payer)
+                        ->setRedirectUrls($redirectUrls)
+                        ->setTransactions([$transaction]);
+
+        return $payment->create($this->apiContext);
     }
 
-    public function pay(Payment $payments, $payerId)
+    public function get($id)
+    {
+        return $this->payment()->get($id, $this->apiContext);
+    }
+
+    public function pay($data)
+    {
+        $payment = $this->get($data['paymentId']);
+
+        return $this->execute($payment, $data['PayerID']);
+    }
+
+    protected function execute(Payment $payments, $payerId)
     {   
         $execution = (new PaymentExecution)->setPayerId($payerId);
 
         return $payments->execute($execution);
     }
 
-    public function getEnvironment()
+    protected function apiContext($clientId, $secret, $config)
     {
-        return $this->environment ?: BillingContract::ENV_SANDBOX;
-    }
-
-    public function setEnvironment($env)
-    {
-        $this->environment = $env;
-    }
-
-    protected function registerPayer($payer)
-    {
-        $fullname = $payer['firstname'] . ' ' . $payer['lastname'];
-
-        $addr = $payer['address'];
-
-        $address = $this->address($fullname, $addr['address'], $addr['city'], $addr['country_code'], $addr['postcode']); 
-
-        $payerInfo = $this->payerInfo(
-            $payer['email'], $payer['firstname'], $payer['lastname'], $payer['phone'], $address
-        );
-
-        return $this->payer($payerInfo);
-    }
-
-    protected function getApiContext($config=[])
-    {
-        if($this->apicontext)
+        if($this->apiContext)
         {
-            return $this->apicontext;
+            return $this->apiContext;
         }
 
-        $apicontext = new ApiContext($this->credential, 'Request-'.time());
+        $config = [
+            'mode' => array_get($config, 'mode', BillingContract::ENV_SANDBOX),
+            'log.LogEnabled' => array_get($config, 'log.enabled', false),
+            'log.FileName' => array_get($config, 'log.path', 'PayPal.log'),
+            'log.LogLevel' => array_get($config, 'log.level', 'FINE')
+        ];
 
-        $apicontext->setConfig([
-            'mode' => $this->getEnvironment(),
-            'log.LogEnabled' => true,
-            'log.FileName' => __DIR__.'/../../../PayPal.log',
-            'log.LogLevel' => 'DEBUG'
-        ]);
+        $credential = $this->getApiCredential($clientId, $secret, $config);
 
-        return $apicontext;
+        $apiContext = new ApiContext($credential, 'Request-'.time());
+
+        $apiContext->setConfig($config);
+
+        return $apiContext;
     }
 
-    protected function getApiCredential($clientId, $secret)
+    protected function getApiCredential($clientId, $secret, $config)
     {
         $credential =  new OAuthTokenCredential($clientId, $secret);
 
-        $mode = $this->getEnvironment();
-
-        $credential->getAccessToken(compact('mode'));
+        $credential->getAccessToken($config);
 
         return $credential;
     }
 
-    protected function address($name, $address, $city, $code, $postcode)
+    protected function payer($method, $info=null)
     {
-        return new ShippingAddress([
-            'recipient_name' => $name,
-            'line1' => $address,
-            'city' => $city,
-            'country_code' => $code,
-            'postal_code' => $postcode
-        ]);
+        $payer = new Payer;
 
+        return $payer->setPaymentMethod($method)
+                     ->setPayerInfo($info);
     }
 
-    protected function amount($total, $currency='THB', $details=[])
+    protected function amount($total, $currency)
     {
-        $details = $this->details($details);
+        $amount = new Amount;
 
-        return new Amount(compact('total', 'currency', 'details'));
+        return $amount->setTotal($total)
+                      ->setCurrency($currency ?: 'THB');
     }
 
-    protected function details($attributes=[])
+    protected function items(array $items)
     {
-        return new Details($attributes);
-    }
+        $list = new ItemList;
 
-    protected function payer(PayerInfo $info, $method='paypal')
-    {
-        return new Payer([
-            'payment_method' => $method,
-            'payer_info' => $info
-        ]);
-    }
-
-    protected function payerInfo($email, $firstname, $lastname, $phone, ShippingAddress $address)
-    {
-        return new PayerInfo([
-            'first_name' => $firstname,
-            'last_name' => $lastname,
-            'shipping_address' => $address
-        ]);
-    }
-
-    protected function payments($payer, $transaction, $redirector, $intent='sale')
-    {
-        return new Payment([
-            'payer' => $payer,
-            'redirect_urls' => $redirector,
-            'transactions' => [ $transaction ],
-            'intent' => $intent
-        ]);
-    }
-
-    protected function redirector($returnUrl, $cancelUrl=null)
-    {
-        $redirectUrl = new RedirectUrls([
-            'return_url' => $returnUrl
-        ]);
-
-        if($cancelUrl)
+        foreach ($items as $item) 
         {
-            $redirectUrl->setCancelUrl($cancelUrl);
+           $list->addItem($this->item($item));
         }
 
-        return $redirectUrl;
+        return $list;
     }
 
-    protected function transaction($amount, $description=null)
+    protected function item(array $data)
     {
-        return new Transaction(compact('amount', 'description'));
+        $item = new Item;
+
+        return $item->setName(array_get($data, 'name'))
+                    ->setQuantity(array_get($data, 'quantity'))
+                    ->setCurrency(array_get($data, 'currency', 'THB'))
+                    ->setPrice(array_get($data, 'price'));
+    }
+
+    protected function payment()
+    {
+        return new Payment;
+    }
+
+    protected function redirect($returnUrl, $cancelUrl=null)
+    {
+        $redirectUrls = new RedirectUrls;
+
+        $redirectUrls->setReturnUrl($returnUrl);
+
+        if(is_null($cancelUrl))
+        {
+            $redirectUrls->setCancelUrl($returnUrl);
+        }
+
+        return $redirectUrls;
+
+    }
+
+    protected function transaction(Amount $amount, ItemList $items, $description)
+    {
+        $transaction = new Transaction;
+
+        return $transaction->setAmount($amount)
+                           ->setInvoiceNumber(uniqid())
+                           ->setItemList($items)
+                           ->setDescription($description);
     }
 }
