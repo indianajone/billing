@@ -58,9 +58,11 @@ class PayPal implements BillingContract {
 
     protected function execute(Payment $payments, $payerId)
     {   
-        $execution = (new PaymentExecution)->setPayerId($payerId);
+        $execution = new PaymentExecution;
 
-        return $payments->execute($execution);
+        $execution->setPayerId($payerId);
+
+        return $payments->execute($execution, $this->apiContext);
     }
 
     protected function apiContext($clientId, $secret, $config)
