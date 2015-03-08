@@ -1,5 +1,7 @@
 <?php namespace Mustache\Billing\Drivers;
 
+use Mustache\Contracts\Billing\Provider as BillingContract;
+
 class TransferLater implements BillingContract {
 
     public function make($data)
