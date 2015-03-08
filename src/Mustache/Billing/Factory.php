@@ -62,6 +62,11 @@ class Factory
         return new Drivers\Paypal($config['client_id'], $config['secret'], $config['settings']);
     }
 
+    public function createTransferDriver()
+    {
+        return new Driver\TransferLater;
+    }
+
     /**
      * Call dynamic create driver method.
      * 
