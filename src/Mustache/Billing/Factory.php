@@ -64,7 +64,7 @@ class Factory
 
     public function createTransferDriver()
     {
-        return new Driver\TransferLater;
+        return new Drivers\TransferLater;
     }
 
     /**
