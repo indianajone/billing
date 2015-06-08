@@ -55,6 +55,11 @@ class PayPal implements BillingContract {
 
     public function execute($data)
     {
+        if(!isset($data['paymentId']))
+        {
+            return false;
+        }
+        
         $payment = $this->get($data['paymentId']);
 
         $result = $this->execution($payment, $data['PayerID']);
