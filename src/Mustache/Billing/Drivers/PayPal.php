@@ -83,16 +83,12 @@ class PayPal implements BillingContract {
             'mode' => array_get($config, 'mode', BillingContract::ENV_SANDBOX),
             'log.LogEnabled' => array_get($config, 'log.enabled', false),
             'log.FileName' => array_get($config, 'log.path', 'PayPal.log'),
-            'log.LogLevel' => array_get($config, 'log.level', 'FINE')
+            'log.LogLevel' => array_get($config, 'log.level', 'DEBUG')
         ];
 
         $credential = $this->getApiCredential($clientId, $secret, $config);
 
-        $apiContext = new ApiContext($credential, 'Request-'.time());
-
-        $apiContext->setConfig($config);
-
-        return $apiContext;
+        return new ApiContext($credential, $this->generateRequestId());
     }
 
     protected function execution(Payment $payments, $payerId)
@@ -104,8 +100,17 @@ class PayPal implements BillingContract {
         return $payments->execute($execution, $this->apiContext);
     }
 
+    private function generateRequestId()
+    {
+        return 'Request-'.time();
+    }
+
     protected function getApiCredential($clientId, $secret, $config)
     {
+        $apiContext = new ApiContext(null, $this->generateRequestId());
+
+        $apiContext->setConfig($config);
+
         $credential =  new OAuthTokenCredential($clientId, $secret);
 
         $credential->getAccessToken($config);
