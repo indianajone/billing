@@ -59,7 +59,7 @@ class Factory
      */
     public function createPaypalDriver(array $config)
     {
-        return new Drivers\Paypal($config['client_id'], $config['secret'], $config['settings']);
+        return new Drivers\PayPal($config['client_id'], $config['secret'], $config['settings']);
     }
 
     public function createTransferDriver()
