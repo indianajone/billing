@@ -3,7 +3,7 @@
     "description": "Billing and Payment",
     "require": {
         "illuminate/support": "~5.0",
-        "paypal/rest-api-sdk-php": "~1.2"
+        "paypal/rest-api-sdk-php": "1.4.0"
     },
     "require-dev": {
         "phpspec/phpspec": "~2.1",
